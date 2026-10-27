@@ -48,6 +48,8 @@ npm run dist     # بناء نسخة Windows محمولة
 - `api/trends.js`, `api/search.js` — دوال Vercel Serverless.
 - `lib/youtube.js` — الجلب من YouTube Data API.
 - `lib/handlers.js` — منطق الـ API المشترك + التخزين المؤقت.
+- `lib/safe.js` — يُظهر أي عطل في الدوال كرسالة JSON واضحة.
+- `api/health.js` — فحص سريع: افتح `/api/health` بعد النشر.
 - `server.js` — خادم محلي (و Electron يستخدمه).
 - `main.cjs` — نافذة Electron.
 - `vercel.json` — إعدادات Vercel.

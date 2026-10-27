@@ -1,4 +1,3 @@
-import { createHandlers, nodeHandler } from '../lib/handlers.js';
+import { safeApi } from '../lib/safe.js';
 
-const h = createHandlers();
-export default nodeHandler(h.trends);
+export default safeApi(h => h.trends);

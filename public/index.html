@@ -1,0 +1,2078 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TrendRadar — Live YouTube Trends</title>
+<style>
+  :root {
+    --font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    --font-arabic: 'Segoe UI', Tahoma, 'Noto Sans Arabic', system-ui, sans-serif;
+    --radius: 16px;
+    --radius-sm: 10px;
+    --radius-pill: 9999px;
+    --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+
+    /* Dark Mode Defaults */
+    --bg: #0b0f19;
+    --bg-grad-1: #1b2450;
+    --bg-grad-2: #241a4a;
+    --card: #151b2e;
+    --card-2: #1c243e;
+    --card-hover: rgba(79, 140, 255, 0.08);
+    --border: #232c48;
+    --border-light: rgba(35, 44, 72, 0.6);
+    --text: #e6ecff;
+    --text-strong: #ffffff;
+    --muted: #8b95b8;
+    --accent: #4f8cff;
+    --accent-2: #7c5cff;
+    --accent-hover: #3b76e8;
+    --header-bg: rgba(11, 15, 25, 0.85);
+    --footer-bg: #0d1222;
+    --shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+    --shadow-sm: 0 4px 14px rgba(0, 0, 0, 0.25);
+    
+    --green: #22c55e;
+    --orange: #f59e0b;
+    --red: #ef4444;
+  }
+
+  [data-theme="light"] {
+    --bg: #f4f6fb;
+    --bg-grad-1: #e0e7ff;
+    --bg-grad-2: #ede9fe;
+    --card: #ffffff;
+    --card-2: #f1f4fc;
+    --card-hover: rgba(79, 140, 255, 0.06);
+    --border: #dbe3f5;
+    --border-light: rgba(219, 227, 245, 0.8);
+    --text: #1e293b;
+    --text-strong: #0f172a;
+    --muted: #64748b;
+    --accent: #3b82f6;
+    --accent-2: #6366f1;
+    --accent-hover: #2563eb;
+    --header-bg: rgba(255, 255, 255, 0.88);
+    --footer-bg: #e9eef8;
+    --shadow: 0 10px 30px rgba(0, 0, 0, 0.06);
+    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.04);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: var(--font-family);
+    background: radial-gradient(1200px 600px at 80% -10%, var(--bg-grad-1) 0%, transparent 60%),
+                radial-gradient(900px 500px at 0% 100%, var(--bg-grad-2) 0%, transparent 55%), var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow-x: hidden;
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+
+  /* Arabic typography without flipping layout positions */
+  html[lang="ar"] body { font-family: var(--font-arabic); }
+
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .ltr { direction: ltr; unicode-bidi: isolate; display: inline-block; }
+  a { color: inherit; text-decoration: none; }
+
+  .wrap { max-width: 1600px; width: calc(100% - 32px); margin: 0 auto; padding: 0; }
+
+  /* ==============================================================
+     HEADER (FIXED LTR POSITIONS - NEVER FLIPPED)
+     ============================================================== */
+  header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    background: var(--header-bg);
+    border-bottom: 1px solid var(--border);
+    transition: var(--transition);
+  }
+
+  .nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 70px;
+    gap: 16px;
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-weight: 800;
+    font-size: 20px;
+    color: var(--text-strong);
+    letter-spacing: -0.02em;
+    user-select: none;
+  }
+
+  .brand .dot {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: conic-gradient(from 45deg, var(--accent), var(--accent-2));
+    box-shadow: 0 0 20px rgba(79, 140, 255, 0.5);
+    display: grid;
+    place-items: center;
+    font-size: 17px;
+  }
+
+  .brand-text { display: flex; flex-direction: column; }
+  .brand-text span { line-height: 1.15; }
+  .brand small { color: var(--muted); font-weight: 500; font-size: 11px; }
+
+  .nav-actions { display: flex; align-items: center; gap: 10px; }
+
+  .icon-btn {
+    background: var(--card);
+    border: 1px solid var(--border);
+    color: var(--text);
+    height: 40px;
+    width: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 16px;
+    transition: var(--transition);
+  }
+
+  .icon-btn:hover {
+    background: var(--card-2);
+    border-color: var(--accent);
+    color: var(--accent);
+    transform: translateY(-1px);
+  }
+
+  /* Language Selector (Always anchored on the right) */
+  .lang-wrapper { position: relative; }
+
+  .lang-btn {
+    background: var(--card);
+    border: 1px solid var(--border);
+    color: var(--text);
+    height: 40px;
+    padding: 0 14px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 13.5px;
+    font-weight: 600;
+    transition: var(--transition);
+  }
+
+  .lang-btn:hover, .lang-wrapper.active .lang-btn {
+    background: var(--card-2);
+    border-color: var(--accent);
+  }
+
+  .lang-menu {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    left: auto;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+    padding: 6px;
+    display: none;
+    flex-direction: column;
+    min-width: 155px;
+    z-index: 150;
+    animation: fadeIn 0.2s ease;
+  }
+
+  .lang-wrapper.active .lang-menu { display: flex; }
+
+  .lang-item {
+    background: transparent;
+    border: none;
+    color: var(--text);
+    font-family: inherit;
+    font-size: 13.5px;
+    font-weight: 500;
+    padding: 9px 12px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    width: 100%;
+    text-align: left;
+    transition: var(--transition);
+  }
+
+  .lang-item:hover { background: var(--card-2); color: var(--accent); }
+  .lang-item.active { background: rgba(79, 140, 255, 0.12); color: var(--accent); font-weight: 700; }
+
+  /* ==============================================================
+     HERO: TWO EXPLANATORY SENTENCES UNDER HEADER
+     ============================================================== */
+  .hero-simple {
+    text-align: center;
+    padding: 34px 0 20px;
+    max-width: 960px;
+    margin: 0 auto;
+  }
+
+  .app-desc-p1 {
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--text-strong);
+    line-height: 1.6;
+    margin-bottom: 8px;
+  }
+
+  .app-desc-p2 {
+    font-size: 14.5px;
+    color: var(--muted);
+    line-height: 1.7;
+  }
+
+  /* ==============================================================
+     SEARCH METHODS (FIXED POSITIONS - NEVER FLIPPED)
+     ============================================================== */
+  .search-container {
+    max-width: 1200px;
+    margin: 10px auto 30px;
+    padding: 0 24px;
+    width: 100%;
+  }
+
+  .method-tabs {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-bottom: 22px;
+    flex-wrap: wrap;
+  }
+
+  .method-tab-btn {
+    background: var(--card);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 700;
+    padding: 12px 24px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: var(--transition);
+  }
+
+  .method-tab-btn:hover {
+    background: var(--card-2);
+    color: var(--text-strong);
+  }
+
+  .method-tab-btn.active {
+    background: linear-gradient(135deg, rgba(79, 140, 255, 0.15), rgba(124, 92, 255, 0.15));
+    border-color: var(--accent);
+    color: var(--accent);
+    box-shadow: 0 0 16px rgba(79, 140, 255, 0.2);
+  }
+
+  .method-panel {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 28px 32px;
+    box-shadow: var(--shadow);
+    display: none;
+    animation: fadeIn 0.25s ease;
+  }
+
+  .method-panel.active { display: block; }
+
+  .panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .panel-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 14px;
+    border-radius: var(--radius-pill);
+    background: rgba(79, 140, 255, 0.12);
+    color: var(--accent);
+    font-size: 13px;
+    font-weight: 700;
+    border: 1px solid rgba(79, 140, 255, 0.28);
+  }
+
+  .panel-desc { font-size: 13px; color: var(--muted); }
+
+  /* Method 1 Controls Layout (Fixed LTR order) */
+  .m1-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    align-items: center;
+  }
+
+  .tb-label { font-size: 13px; color: var(--muted); font-weight: 600; white-space: nowrap; }
+
+  .filter, .select {
+    background: var(--card-2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    color: var(--text);
+    padding: 10px 14px;
+    font-family: inherit;
+    font-size: 13.5px;
+    transition: var(--transition);
+  }
+
+  .filter:focus, .select:focus { border-color: var(--accent); outline: none; }
+  .filter { width: 220px; }
+  .filter::placeholder { color: var(--muted); opacity: 0.7; }
+
+  /* Method 2 Controls Layout (Fixed LTR order) */
+  .m2-controls {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+  }
+
+  .m2-input {
+    flex: 1;
+    background: var(--card-2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    color: var(--text);
+    padding: 12px 18px;
+    font-family: inherit;
+    font-size: 14.5px;
+    transition: var(--transition);
+  }
+
+  .m2-input:focus { border-color: var(--accent); outline: none; }
+  .m2-input::placeholder { color: var(--muted); opacity: 0.7; }
+
+  /* Submit Search Buttons */
+  .btn-search {
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+    font-weight: 700;
+    font-size: 14px;
+    padding: 0 24px;
+    height: 44px;
+    border-radius: 12px;
+    color: #ffffff;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    white-space: nowrap;
+    box-shadow: 0 4px 14px rgba(79, 140, 255, 0.35);
+    transition: var(--transition);
+  }
+
+  .btn-search:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(79, 140, 255, 0.5);
+  }
+
+  .btn-search:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+
+  /* ==============================================================
+     RESULTS & TABLE (REVERSED RTL ONLY)
+     ============================================================== */
+  #results {
+    flex: 1;
+    max-width: 1600px;
+    width: calc(100% - 32px);
+    margin: 20px auto 60px;
+    padding: 0;
+  }
+
+  .initial-hero-card {
+    text-align: center;
+    padding: 60px 24px;
+    background: var(--card);
+    border: 1px dashed var(--border);
+    border-radius: var(--radius);
+    margin-top: 10px;
+  }
+
+  .initial-hero-card .icon { font-size: 48px; margin-bottom: 16px; opacity: 0.85; }
+  .initial-hero-card h3 { font-size: 20px; color: var(--text-strong); margin-bottom: 10px; }
+  .initial-hero-card p { font-size: 14px; color: var(--muted); max-width: 580px; margin: 0 auto; line-height: 1.8; }
+
+  .section { margin-bottom: 50px; }
+  .sec-head {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .sec-head h3 { font-size: 21px; font-weight: 700; color: var(--text-strong); }
+  .sec-head .meta { font-size: 12.5px; color: var(--muted); margin-top: 6px; line-height: 1.7; max-width: 780px; }
+
+  .badge {
+    font-size: 12px;
+    padding: 6px 14px;
+    border-radius: var(--radius-pill);
+    font-weight: 600;
+    background: rgba(79, 140, 255, 0.12);
+    color: var(--accent);
+    border: 1px solid rgba(79, 140, 255, 0.28);
+    white-space: nowrap;
+  }
+
+  .warn {
+    margin-bottom: 14px;
+    padding: 14px 18px;
+    border-radius: 12px;
+    font-size: 13.5px;
+    line-height: 1.8;
+    background: rgba(245, 158, 11, 0.09);
+    border: 1px solid rgba(245, 158, 11, 0.35);
+    color: var(--orange);
+  }
+
+  .err {
+    margin-bottom: 14px;
+    padding: 14px 18px;
+    border-radius: 12px;
+    font-size: 13.5px;
+    line-height: 1.8;
+    background: rgba(239, 68, 68, 0.08);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    color: var(--red);
+  }
+
+  /* Table strictly reversed right-to-left */
+  .table-wrap {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    box-shadow: var(--shadow);
+    direction: rtl;
+    width: 100%;
+  }
+
+  table {
+    width: 100%;
+    table-layout: fixed;
+    border-collapse: collapse;
+    font-size: 13px;
+    direction: rtl;
+  }
+
+  thead { background: var(--card-2); }
+
+  th {
+    text-align: right;
+    padding: 11px 8px;
+    font-size: 11.5px;
+    color: var(--muted);
+    font-weight: 700;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Specific column width allocations (Total = 100%) */
+  th.col-rank, td.col-rank { width: 4.5%; min-width: 40px; text-align: center; }
+  th.col-video, td.col-video { width: 34%; min-width: 190px; }
+  th.col-views, td.col-views { width: 10.5%; min-width: 75px; }
+  th.col-likes, td.col-likes { width: 9.5%; min-width: 70px; }
+  th.col-comments, td.col-comments { width: 8.5%; min-width: 65px; }
+  th.col-duration, td.col-duration { width: 8%; min-width: 60px; }
+  th.col-published, td.col-published { width: 10%; min-width: 80px; }
+  th.col-countries, td.col-countries { width: 15%; min-width: 110px; }
+
+  th.sortable { cursor: pointer; user-select: none; transition: var(--transition); }
+  th.sortable:hover { color: var(--text-strong); }
+
+  th .arr {
+    display: inline-block;
+    width: 0;
+    height: 0;
+    margin-inline-start: 5px;
+    vertical-align: middle;
+    border-left: 3.5px solid transparent;
+    border-right: 3.5px solid transparent;
+    border-top: 5px solid var(--muted);
+    opacity: 0.6;
+  }
+
+  th .arr.desc { border-top-color: var(--accent); opacity: 1; }
+  th .arr.asc { border-top: none; border-bottom: 5px solid var(--accent); opacity: 1; }
+  th .real { display: block; font-size: 9.5px; color: var(--muted); font-weight: 400; margin-top: 2px; }
+
+  td {
+    padding: 10px 8px;
+    border-bottom: 1px solid var(--border-light);
+    vertical-align: middle;
+    text-align: right;
+    overflow: hidden;
+  }
+
+  tbody tr { transition: background-color 0.15s ease; }
+  tbody tr:hover { background: var(--card-hover); }
+  tbody tr:last-child td { border-bottom: none; }
+  td.rank, td.col-rank { font-weight: 800; font-size: 14px; color: var(--accent); text-align: center; }
+
+  .app-cell {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    min-width: 0;
+  }
+  .app-cell img, .app-cell .noimg {
+    width: 38px;
+    height: 38px;
+    border-radius: 8px;
+    flex-shrink: 0;
+    border: 1px solid var(--border);
+  }
+  .app-cell img.vthumb, .app-cell .noimg { width: 68px; height: 40px; border-radius: 6px; flex-shrink: 0; }
+  .app-cell img.chan-thumb { width: 42px; height: 42px; border-radius: 50%; flex-shrink: 0; }
+  .app-cell img { object-fit: cover; background: var(--card-2); }
+  .app-cell .noimg {
+    background: linear-gradient(135deg, var(--card-2), var(--card));
+    display: grid;
+    place-items: center;
+    font-size: 16px;
+  }
+  .app-cell .meta {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+    flex: 1;
+    overflow: hidden;
+  }
+  .app-cell .name {
+    font-weight: 700;
+    font-size: 13px;
+    color: var(--text-strong);
+    text-decoration: none;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    line-height: 1.35;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+    max-width: 100%;
+  }
+  a.name:hover { color: var(--accent); text-decoration: underline; }
+  .app-cell .dev {
+    font-size: 11.5px;
+    color: var(--muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
+  }
+
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 8px;
+    border-radius: var(--radius-pill);
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .pill.blue { background: rgba(79, 140, 255, 0.12); color: var(--accent); }
+  .pill.green { background: rgba(34, 197, 94, 0.12); color: var(--green); }
+  .pill.orange { background: rgba(245, 158, 11, 0.12); color: var(--orange); }
+  .pill.gray { background: rgba(139, 149, 184, 0.12); color: var(--muted); }
+  .pill.red { background: rgba(239, 68, 68, 0.12); color: var(--red); }
+
+  .cell-main {
+    font-weight: 700;
+    font-size: 13.5px;
+    color: var(--text-strong);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .cell-main.na { color: var(--muted); font-weight: 400; font-size: 12.5px; }
+  .cell-sub {
+    font-size: 10.5px;
+    color: var(--muted);
+    margin-top: 2px;
+    line-height: 1.4;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .skel-row td { padding: 14px 8px; }
+  .skel {
+    height: 14px;
+    border-radius: 6px;
+    background: linear-gradient(90deg, var(--card), var(--card-2), var(--card));
+    background-size: 200% 100%;
+    animation: shimmer 1.3s infinite;
+  }
+  @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+  .empty { text-align: center; padding: 48px 24px; color: var(--muted); }
+  .empty .big { font-size: 44px; margin-bottom: 12px; opacity: 0.7; }
+  .empty h4 { color: var(--text-strong); font-size: 18px; margin-bottom: 8px; }
+  .empty p { font-size: 14px; max-width: 600px; margin: 0 auto 10px; line-height: 1.8; }
+  .empty code, .note code {
+    direction: ltr;
+    unicode-bidi: isolate;
+    display: inline-block;
+    font-size: 12px;
+    color: var(--accent);
+    background: var(--card-2);
+    padding: 2px 8px;
+    border-radius: 6px;
+  }
+
+  .note {
+    margin-top: 24px;
+    padding: 20px 24px;
+    border-radius: var(--radius);
+    background: rgba(79, 140, 255, 0.05);
+    border: 1px solid rgba(79, 140, 255, 0.2);
+    font-size: 13px;
+    color: var(--text);
+    line-height: 1.85;
+  }
+  .note b { color: var(--text-strong); }
+  .note ul { margin: 10px 20px 0; padding: 0; }
+  .note li { margin-bottom: 7px; }
+
+  /* ==============================================================
+     PROFESSIONAL FOOTER (FIXED POSITIONS - NEVER FLIPPED)
+     ============================================================== */
+  footer {
+    background: var(--footer-bg);
+    border-top: 1px solid var(--border);
+    padding: 60px 0 30px;
+    margin-top: auto;
+    font-size: 13.5px;
+    color: var(--muted);
+    transition: var(--transition);
+  }
+
+  .footer-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1.2fr;
+    gap: 40px;
+    margin-bottom: 40px;
+  }
+
+  .footer-col h4 {
+    color: var(--text-strong);
+    font-size: 15px;
+    font-weight: 700;
+    margin-bottom: 16px;
+  }
+
+  .footer-brand { display: flex; flex-direction: column; gap: 12px; }
+  .footer-desc { font-size: 13.5px; line-height: 1.8; max-width: 380px; }
+
+  .footer-links {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .footer-links a { color: var(--muted); transition: var(--transition); }
+  .footer-links a:hover {
+    color: var(--accent);
+    transform: translateX(4px);
+    display: inline-block;
+  }
+
+  .footer-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    border-radius: var(--radius-pill);
+    background: var(--card);
+    border: 1px solid var(--border);
+    font-size: 12px;
+    color: var(--text);
+    margin-top: 6px;
+  }
+
+  .footer-bottom {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+    padding-top: 28px;
+    border-top: 1px solid var(--border-light);
+    font-size: 12.5px;
+  }
+
+  .back-to-top {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    background: var(--card);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 6px 14px;
+    border-radius: var(--radius-sm);
+    font-size: 12px;
+    font-weight: 600;
+    transition: var(--transition);
+  }
+
+  .back-to-top:hover {
+    background: var(--card-2);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  @media(max-width: 1000px) {
+    .footer-grid { grid-template-columns: 1fr 1fr; }
+  }
+
+  @media(max-width: 768px) {
+    table { min-width: 720px; }
+  }
+
+  @media(max-width: 640px) {
+    .footer-grid { grid-template-columns: 1fr; gap: 30px; }
+    .nav { height: 64px; }
+    .brand small { display: none; }
+    .filter { width: 100%; }
+    .chips { width: 100%; justify-content: center; }
+    .method-panel { padding: 20px 18px; }
+    .m2-controls { flex-direction: column; align-items: stretch; }
+    .m1-controls { flex-direction: column; align-items: stretch; }
+  }
+
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
+</style>
+</head>
+<body>
+
+<!-- Header (Always fixed orientation) -->
+<header>
+  <div class="wrap nav">
+    <div class="brand">
+      <div class="dot">📡</div>
+      <div class="brand-text">
+        <span>TrendRadar</span>
+        <small id="brandSub">v6 · Live YouTube Analytics</small>
+      </div>
+    </div>
+    <div class="nav-actions">
+      <!-- Dark/Light Mode Toggle -->
+      <button class="icon-btn" id="themeToggle" type="button" aria-label="Toggle dark/light theme" title="Toggle theme">
+        <span id="themeIcon">☀️</span>
+      </button>
+
+      <!-- Language Switcher (Always on the right) -->
+      <div class="lang-wrapper" id="langWrapper">
+        <button class="lang-btn" id="langBtn" type="button" aria-label="Select language" aria-expanded="false">
+          <span>🌐</span>
+          <span id="currentLangLabel">English</span>
+          <span style="font-size: 10px; opacity: 0.7;">▼</span>
+        </button>
+        <div class="lang-menu" id="langMenu" role="menu">
+          <button class="lang-item active" data-lang="en" type="button" role="menuitem">
+            <span>🇺🇸</span> English (Official)
+          </button>
+          <button class="lang-item" data-lang="ar" type="button" role="menuitem">
+            <span>🇸🇦</span> العربية
+          </button>
+          <button class="lang-item" data-lang="fr" type="button" role="menuitem">
+            <span>🇫🇷</span> Français
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- Two Explanatory Sentences Under Header -->
+<section class="hero-simple wrap">
+  <p class="app-desc-p1" id="appDescP1">This platform monitors, analyzes, and ranks real-time trending YouTube videos across 20+ countries without music content.</p>
+  <p class="app-desc-p2" id="appDescP2">Choose a search method below to explore regional trends by criteria or search directly for any video or channel.</p>
+</section>
+
+<!-- Search Methods Section (Fixed layout - never flipped) -->
+<section class="search-container">
+  <!-- Method Selection Tabs -->
+  <div class="method-tabs" role="tablist">
+    <button class="method-tab-btn active" id="tabBtn1" type="button" role="tab" onclick="switchMethod('1')">
+      <span>📊</span>
+      <span id="tab1Title">Method 1: Trend Discovery by Criteria</span>
+    </button>
+    <button class="method-tab-btn" id="tabBtn2" type="button" role="tab" onclick="switchMethod('2')">
+      <span>🔎</span>
+      <span id="tab2Title">Method 2: Search by Video or Channel Name</span>
+    </button>
+  </div>
+
+  <!-- Method 1 Panel -->
+  <div class="method-panel active" id="methodPanel1" role="tabpanel">
+    <div class="panel-header">
+      <span class="panel-badge" id="m1Badge">Method 1: Trend Discovery</span>
+      <span class="panel-desc" id="m1Desc">Filter trending lists by category, country, and keyword</span>
+    </div>
+    <div class="m1-controls">
+      <!-- Format Select -->
+      <select class="select" id="formatSelect" aria-label="Format filter">
+        <option value="all"     id="chipAll">All Formats</option>
+        <option value="regular" id="chipRegular">Regular</option>
+        <option value="short"   id="chipShort">Shorts</option>
+        <option value="kids"    id="chipKids">Kids</option>
+      </select>
+
+      <!-- Channel or Video Selection in Method 1 -->
+      <select class="select" id="entityType1" aria-label="Target: Video or Channel">
+        <option value="video" id="optM1Video">🎥 Videos</option>
+        <option value="channel" id="optM1Channel">📢 Channels</option>
+        <option value="all" id="optM1All">🌐 All</option>
+      </select>
+
+      <!-- Country Selection -->
+      <select class="select" id="cc" aria-label="Filter by country">
+        <option value="" id="optAllCountries">All Countries</option>
+      </select>
+
+      <!-- Published Time Filter in Method 1 -->
+      <select class="select" id="timeFilter1" aria-label="Published time filter">
+        <option value="0" id="optTimeAll1">🕒 Any Time</option>
+        <option value="3" id="optTime3h1">⚡ Last 3 Hours</option>
+        <option value="6" id="optTime6h1">⚡ Last 6 Hours</option>
+        <option value="12" id="optTime12h1">⚡ Last 12 Hours</option>
+        <option value="24" id="optTime24h1">🔥 Last 24 Hours</option>
+        <option value="48" id="optTime48h1">🔥 Last 48 Hours</option>
+        <option value="168" id="optTime7d1">📅 Last 7 Days</option>
+      </select>
+
+      <!-- Keyword Filter -->
+      <input class="filter" id="q1" type="search" aria-label="Filter results" placeholder="Filter by keyword (optional)...">
+
+      <!-- Search Button -->
+      <button class="btn-search" id="btnSearchM1" type="button">
+        <span>🔍</span>
+        <span id="btnSearchM1Text">Search Trends</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Method 2 Panel -->
+  <div class="method-panel" id="methodPanel2" role="tabpanel">
+    <div class="panel-header">
+      <span class="panel-badge" id="m2Badge">Method 2: Direct Search</span>
+      <span class="panel-desc" id="m2Desc">Directly search for any video title or YouTube channel</span>
+    </div>
+    <div class="m2-controls">
+      <!-- Channel or Video Selection in Method 2 -->
+      <select class="select" id="entityType2" aria-label="Search for Video or Channel">
+        <option value="video" id="optM2Video">🎥 Video</option>
+        <option value="channel" id="optM2Channel">📢 Channel</option>
+      </select>
+
+      <!-- Country Selection in Method 2 -->
+      <select class="select" id="cc2" aria-label="Filter by country in search">
+        <option value="" id="optAllCountries2">All Countries</option>
+      </select>
+
+      <!-- Published Time Filter in Method 2 -->
+      <select class="select" id="timeFilter2" aria-label="Published time filter in search">
+        <option value="0" id="optTimeAll2">🕒 Any Time</option>
+        <option value="3" id="optTime3h2">⚡ Last 3 Hours</option>
+        <option value="6" id="optTime6h2">⚡ Last 6 Hours</option>
+        <option value="12" id="optTime12h2">⚡ Last 12 Hours</option>
+        <option value="24" id="optTime24h2">🔥 Last 24 Hours</option>
+        <option value="48" id="optTime48h2">🔥 Last 48 Hours</option>
+        <option value="168" id="optTime7d2">📅 Last 7 Days</option>
+      </select>
+
+      <input class="m2-input" id="q2" type="search" aria-label="Search by video title or channel name" placeholder="Enter any video title or YouTube channel name...">
+
+      <button class="btn-search" id="btnSearchM2" type="button">
+        <span>🔍</span>
+        <span id="btnSearchM2Text">Search YouTube</span>
+      </button>
+    </div>
+  </div>
+</section>
+
+<!-- Main Results Section (Initial state shown until user initiates search) -->
+<main id="results" aria-live="polite"></main>
+
+<!-- Professional Footer (Fixed LTR layout - never flipped) -->
+<footer>
+  <div class="wrap">
+    <div class="footer-grid">
+      <!-- Col 1: Brand Info -->
+      <div class="footer-col footer-brand">
+        <div class="brand">
+          <div class="dot">📡</div>
+          <div class="brand-text">
+            <span>TrendRadar</span>
+            <small>v6 · Global Analytics</small>
+          </div>
+        </div>
+        <p class="footer-desc" id="footerDesc">
+          Automated multi-region YouTube trend analyzer aggregating real-time popular charts across 20+ countries, categorizing regular videos, shorts, and family content.
+        </p>
+        <div class="footer-badge">
+          <span style="color:var(--green)">●</span>
+          <span>YouTube Data API v3 · Active</span>
+        </div>
+      </div>
+
+      <!-- Col 2: Navigation -->
+      <div class="footer-col">
+        <h4 id="footerNavTitle">Search Methods</h4>
+        <ul class="footer-links">
+          <li><a href="javascript:void(0)" onclick="switchMethod('1')"><span id="fnM1">Method 1: Trend Discovery</span></a></li>
+          <li><a href="javascript:void(0)" onclick="switchMethod('2')"><span id="fnM2">Method 2: Video & Channel Search</span></a></li>
+        </ul>
+      </div>
+
+      <!-- Col 3: Specifications -->
+      <div class="footer-col">
+        <h4 id="footerSpecsTitle">Data Engine</h4>
+        <ul class="footer-links">
+          <li><span style="color:var(--text-strong)">Cache TTL:</span> 3 Hours</li>
+          <li><span style="color:var(--text-strong)">Music:</span> Filtered Out</li>
+          <li><span style="color:var(--text-strong)">Engine:</span> Node.js + PM2</li>
+          <li><span style="color:var(--text-strong)">Regions:</span> 20+ Countries</li>
+        </ul>
+      </div>
+
+      <!-- Col 4: Platform & Legal -->
+      <div class="footer-col">
+        <h4 id="footerLegalTitle">Platform & Terms</h4>
+        <p class="footer-desc" style="font-size: 12.5px; line-height: 1.7;" id="footerLegalDesc">
+          TrendRadar is an independent monitoring dashboard. YouTube and its trademarks belong to Google LLC.
+        </p>
+        <div style="margin-top: 14px;">
+          <button class="back-to-top" onclick="window.scrollTo({top:0, behavior:'smooth'})" type="button">
+            <span>↑</span> <span id="backToTopText">Back to top</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom Line -->
+    <div class="footer-bottom">
+      <div>
+        © <span id="footerYear">2026</span> TrendRadar. <span id="footerRights">All rights reserved.</span>
+      </div>
+      <div style="display: flex; gap: 18px; align-items: center;">
+        <span id="footerDefaultLang">Official Language: English</span>
+        <span>•</span>
+        <span>v4.0.0 (Production)</span>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script>
+'use strict';
+
+/* ================================================================
+   TrendRadar v6
+   Default & Official Language: English ('en')
+   Supported Languages: English ('en'), Arabic ('ar'), French ('fr')
+   ================================================================ */
+
+const $ = id => document.getElementById(id);
+const API = (new URLSearchParams(location.search).get('api') || '').replace(/\/$/, '');
+
+const DEFAULT_REGIONS = ['US','GB','CA','AU','IN','BR','MX','DE','FR','ES','IT','JP','KR','ID','TR','SA','EG','AE','MA','DZ'];
+
+// Translations Dictionary
+const I18N = {
+  en: {
+    brandSub: 'v6 · Live YouTube Analytics',
+    appDescP1: 'This platform monitors, analyzes, and ranks real-time trending YouTube videos across 20+ countries without music content.',
+    appDescP2: 'Choose a search method below to explore regional trends by criteria or search directly for any video or channel.',
+    tab1Title: 'Method 1: Trend Discovery by Criteria',
+    tab2Title: 'Method 2: Search by Video or Channel Name',
+    m1Badge: 'Method 1: Trend Discovery',
+    m1Desc: 'Filter trending lists by category, country, and keyword',
+    m1Btn: 'Search Trends',
+    m2Badge: 'Method 2: Direct Search',
+    m2Desc: 'Directly search for any video title or YouTube channel',
+    m2Placeholder: 'Enter any video title or YouTube channel name...',
+    m2Btn: 'Search YouTube',
+    tbFormat: 'Format:',
+    all: 'All',
+    regular: 'Regular',
+    shorts: 'Shorts',
+    kids: 'Kids',
+    optVideos: '🎥 Videos',
+    optChannels: '📢 Channels',
+    optAllEntity: '🌐 All',
+    allCountries: 'All Countries',
+    timeOptions: {
+      '0': '🕒 Any Time',
+      '3': '⚡ Last 3 Hours',
+      '6': '⚡ Last 6 Hours',
+      '12': '⚡ Last 12 Hours',
+      '24': '🔥 Last 24 Hours',
+      '48': '🔥 Last 48 Hours',
+      '168': '📅 Last 7 Days'
+    },
+    searchPlaceholder: 'Filter by keyword (optional)...',
+    searching: 'Searching...',
+    initialTitle: 'Select a Search Method to Begin',
+    initialSub: 'Choose Method 1 to explore trending charts by format and country, or Method 2 to search directly by video title or channel name.',
+    badgeVideos: 'items',
+    lastSync: 'Last fetched',
+    countriesInTrend: 'countries',
+    bestRank: 'Best rank',
+    viewsLabel: 'views',
+    subscribersLabel: 'subscribers',
+    videosCountLabel: 'videos',
+    liveStream: 'Live',
+    today: 'Today',
+    daysAgo: n => `${Math.round(n)} days ago`,
+    monthsAgo: n => `${Math.round(n/30)} months ago`,
+    yearsAgo: n => `${(n/365).toFixed(1)} years ago`,
+    sections: {
+      regular: { title: 'Standard Videos', hint: 'Videos longer than 1 minute' },
+      short:   { title: 'YouTube Shorts', hint: 'Videos 60 seconds or shorter' },
+      kids:    { title: 'Kids & Family', hint: 'Videos labeled "Made for Kids" by creators' },
+      searchResults: { title: 'Search Results', hint: 'Matching results from YouTube' },
+      trendingChannels: { title: 'Trending Channels', hint: 'Top channels currently dominating the trend charts' }
+    },
+    secSubtitle: 'Source: YouTube Data API v3 · Music excluded',
+    th: {
+      rank: 'Rank',
+      rankSub: 'By popularity & presence',
+      video: 'Video / Channel',
+      videoSub: 'Title · Channel · Category',
+      views: 'Views',
+      viewsSub: 'viewCount',
+      likes: 'Likes / Subs',
+      likesSub: 'likeCount / subscribers',
+      comments: 'Comments / Vids',
+      commentsSub: 'commentCount / videos',
+      duration: 'Duration',
+      durationSub: 'duration',
+      published: 'Published',
+      publishedSub: 'publishedAt',
+      countries: 'Trending In',
+      countriesSub: 'Where video appears'
+    },
+    categories: {
+      '1':'Film & Animation','2':'Autos & Vehicles','15':'Pets & Animals','17':'Sports','19':'Travel & Events',
+      '20':'Gaming','22':'People & Blogs','23':'Comedy','24':'Entertainment','25':'News & Politics',
+      '26':'Howto & Style','27':'Education','28':'Science & Tech','29':'Nonprofits','channel':'YouTube Creator'
+    },
+    uncategorized: 'Uncategorized',
+    emptyTitle: 'No results match your search criteria',
+    emptyType: 'No items of this category in current results',
+    loadingTitle: 'Fetching YouTube Data...',
+    loadingSub: 'Querying data from the server... This may take a few seconds.',
+    notesTitle: 'How to Read These Tables',
+    notes: [
+      '<b>Source:</b> Popular charts from YouTube Data API v3 across 20+ countries, with category-based lookups to bypass music dominance.',
+      '<b>Excluding Music:</b> Category 10 (Music) is automatically excluded.',
+      '<b>Rank Calculation:</b> Calculated based on cross-country presence followed by peak chart rank.',
+      '<b>Channels vs Videos:</b> Filter trending lists by individual videos or aggregated creator channels.'
+    ],
+    errKeyTitle: 'YouTube API Key Issue',
+    errKeyDesc: 'Ensure YOUTUBE_API_KEY is configured on the server and YouTube Data API v3 is enabled.',
+    errConnTitle: 'Cannot Connect to TrendRadar Server',
+    errConnDesc: 'Unable to reach the backend API server. Make sure the Node.js server is running.',
+    footerDesc: 'Automated multi-region YouTube trend analyzer aggregating real-time popular charts across 20+ countries, categorizing regular videos, shorts, and family content.',
+    footerNavTitle: 'Search Methods',
+    footerSpecsTitle: 'Data Engine',
+    footerLegalTitle: 'Platform & Legal',
+    footerLegalDesc: 'TrendRadar is an independent monitoring dashboard. YouTube and its trademarks belong to Google LLC.',
+    backToTop: 'Back to top',
+    rights: 'All rights reserved.',
+    officialLang: 'Official Language: English'
+  },
+  ar: {
+    brandSub: 'v6 · تحليلات يوتيوب المباشرة',
+    appDescP1: 'ترصد هذه المنصة الفيديوهات الأكثر رواجاً عالمياً على يوتيوب في أكثر من 20 دولة وتصنفها لحظياً بدون محتوى الموسيقى.',
+    appDescP2: 'اختر إحدى طريقتي البحث أدناه لاستكشاف الترند حسب المعايير والدول أو للبحث المباشر عن أي فيديو أو قناة.',
+    tab1Title: 'طريقة البحث الأولى: استكشاف الترند بالمعايير',
+    tab2Title: 'طريقة البحث الثانية: البحث باسم الفيديو أو القناة',
+    m1Badge: 'طريقة البحث الأولى: استكشاف الترند',
+    m1Desc: 'تصفية قوائم الفيديوهات الرائجة حسب النوع، الدولة، والكلمات المفتاحية',
+    m1Btn: 'بحث في الترند',
+    m2Badge: 'طريقة البحث الثانية: بحث مباشر',
+    m2Desc: 'بحث مباشر عن أي اسم لفيديو أو قناة على منصة يوتيوب',
+    m2Placeholder: 'اكتب اسم أي فيديو أو قناة على يوتيوب...',
+    m2Btn: 'بحث في يوتيوب',
+    tbFormat: 'النوع:',
+    all: 'الكل',
+    regular: 'عادي',
+    shorts: 'Shorts',
+    kids: 'كيدس',
+    optVideos: '🎥 فيديوهات',
+    optChannels: '📢 قنوات',
+    optAllEntity: '🌐 الكل',
+    allCountries: 'كل الدول',
+    timeOptions: {
+      '0': '🕒 أي وقت',
+      '3': '⚡ آخر 3 ساعات',
+      '6': '⚡ آخر 6 ساعات',
+      '12': '⚡ آخر 12 ساعة',
+      '24': '🔥 آخر 24 ساعة',
+      '48': '🔥 آخر 48 ساعة',
+      '168': '📅 آخر 7 أيام'
+    },
+    searchPlaceholder: 'تصفية بكلمة مفتاحية (اختياري)...',
+    searching: 'جارٍ البحث...',
+    initialTitle: 'اختر طريقة البحث للبدء',
+    initialSub: 'استخدم طريقة البحث الأولى لاستعراض الترند حسب المعايير والدول، أو طريقة البحث الثانية للبحث عن أي فيديو أو قناة محددة.',
+    badgeVideos: 'عنصر',
+    lastSync: 'آخر جلب',
+    countriesInTrend: 'دولة',
+    bestRank: 'أفضل موقع',
+    viewsLabel: 'مشاهدة',
+    subscribersLabel: 'مشترك',
+    videosCountLabel: 'فيديو',
+    liveStream: 'بث مباشر',
+    today: 'اليوم',
+    daysAgo: n => `قبل ${Math.round(n)} يوم`,
+    monthsAgo: n => `قبل ${Math.round(n/30)} شهر`,
+    yearsAgo: n => `قبل ${(n/365).toFixed(1)} سنة`,
+    sections: {
+      regular: { title: 'الفيديوهات العادية', hint: 'فيديوهات أطول من دقيقة' },
+      short:   { title: 'Shorts', hint: 'فيديوهات مدتها دقيقة أو أقل' },
+      kids:    { title: 'كيدس', hint: 'فيديوهات يعلّمها ناشروها «مخصصة للأطفال»' },
+      searchResults: { title: 'نتائج البحث', hint: 'النتائج المطابقة من يوتيوب' },
+      trendingChannels: { title: 'أبرز القنوات المتصدرة', hint: 'القنوات الأكثر حضوراً في قوائم الرواج الحالية' }
+    },
+    secSubtitle: 'المصدر: YouTube Data API v3 · بدون الموسيقى',
+    th: {
+      rank: 'الترتيب',
+      rankSub: 'حسب عدد الدول ثم أفضل موقع',
+      video: 'الفيديو / القناة',
+      videoSub: 'العنوان · القناة · التصنيف',
+      views: 'المشاهدات',
+      viewsSub: 'viewCount',
+      likes: 'الإعجابات / المشتركون',
+      likesSub: 'likeCount / subscribers',
+      comments: 'التعليقات / الفيديوهات',
+      commentsSub: 'commentCount / videos',
+      duration: 'المدة',
+      durationSub: 'duration',
+      published: 'تاريخ النشر',
+      publishedSub: 'publishedAt',
+      countries: 'الدول في الترند',
+      countriesSub: 'أين يظهر في الترند'
+    },
+    categories: {
+      '1':'أفلام وأنيميشن','2':'سيارات','15':'حيوانات','17':'رياضة','19':'سفر','20':'ألعاب','22':'أشخاص ومدونات',
+      '23':'كوميديا','24':'ترفيه','25':'أخبار وسياسة','26':'تعليمات وأسلوب','27':'تعليم','28':'علوم وتقنية','29':'منظمات غير ربحية','channel':'صانع محتوى'
+    },
+    uncategorized: 'غير مصنّف',
+    emptyTitle: 'لا توجد نتائج تطابق معايير البحث',
+    emptyType: 'لا توجد عناصر من هذا النوع في النتائج',
+    loadingTitle: 'جارٍ جلب البيانات...',
+    loadingSub: 'جارٍ الاتصال بالخادم... قد يستغرق أول جلب بضع ثوانٍ.',
+    notesTitle: 'كيف تُقرأ الجداول',
+    notes: [
+      '<b>المصدر:</b> قوائم «الأكثر رواجاً» (<code>mostPopular</code>) لكل دولة من YouTube Data API، إضافةً لقوائم الفئات لتجنب هيمنة الموسيقى.',
+      '<b>بدون الموسيقى:</b> نستبعد كل فيديو تصنيفه Music تلقائياً.',
+      '<b>الترتيب:</b> يحسبه TrendRadar بحسب عدد الدول التي يتصدر فيها المحتوى أولاً ثم أفضل مركز حققه.',
+      '<b>الفيديوهات والقنوات:</b> يمكنك تصفية قوائم الترند لعرض الفيديوهات أو تجميعها حسب القنوات الأكثر ظهوراً.'
+    ],
+    errKeyTitle: 'مشكلة في مفتاح YouTube API',
+    errKeyDesc: 'تأكد من ضبط متغير YOUTUBE_API_KEY وتفعيل واجهة YouTube Data API v3.',
+    errConnTitle: 'تعذّر الوصول إلى خادم TrendRadar',
+    errConnDesc: 'تأكد من أن خادم Node.js يعمل بنجاح.',
+    footerDesc: 'لوحة تحليلات مؤتمتة تجمع بيانات الفيديوهات الأكثر رواجاً على يوتيوب في أكثر من 20 دولة وتقسمها إلى فيديوهات عادية، شورتس، ومحتوى عائلي.',
+    footerNavTitle: 'طرق البحث',
+    footerSpecsTitle: 'محرك البيانات',
+    footerLegalTitle: 'المنصة والشروط',
+    footerLegalDesc: 'TrendRadar لوحة معلومات مستقلة. جميع حقوق علامة يوتيوب مملوكة لشركة Google LLC.',
+    backToTop: 'العودة للأعلى',
+    rights: 'جميع الحقوق محفوظة.',
+    officialLang: 'اللغة الرسمية دائماً: الإنجليزية'
+  },
+  fr: {
+    brandSub: 'v6 · Statistiques YouTube en Direct',
+    appDescP1: 'Cette plateforme surveille et classe en temps réel les vidéos tendances sur YouTube dans plus de 20 pays, hors musique.',
+    appDescP2: 'Choisissez ci-dessous une méthode de recherche pour explorer les tendances par critères ou rechercher directement une vidéo ou une chaîne.',
+    tab1Title: 'Méthode 1 : Explorer les tendances par critères',
+    tab2Title: 'Méthode 2 : Recherche par vidéo ou chaîne',
+    m1Badge: 'Méthode 1 : Explorer les tendances',
+    m1Desc: 'Filtrer les classements par catégorie, pays et mot-clé',
+    m1Btn: 'Rechercher les tendances',
+    m2Badge: 'Méthode 2 : Recherche directe',
+    m2Desc: 'Recherche directe par titre de vidéo ou nom de chaîne YouTube',
+    m2Placeholder: 'Entrez le nom d\'une vidéo ou d\'une chaîne...',
+    m2Btn: 'Rechercher sur YouTube',
+    tbFormat: 'Format :',
+    all: 'Tous',
+    regular: 'Standard',
+    shorts: 'Shorts',
+    kids: 'Enfants',
+    optVideos: '🎥 Vidéos',
+    optChannels: '📢 Chaînes',
+    optAllEntity: '🌐 Tout',
+    allCountries: 'Tous les pays',
+    timeOptions: {
+      '0': '🕒 Tout le temps',
+      '3': '⚡ Dernières 3h',
+      '6': '⚡ Dernières 6h',
+      '12': '⚡ Dernières 12h',
+      '24': '🔥 Dernières 24h',
+      '48': '🔥 Dernières 48h',
+      '168': '📅 7 derniers jours'
+    },
+    searchPlaceholder: 'Filtrer par mot-clé (optionnel)...',
+    searching: 'Recherche...',
+    initialTitle: 'Choisissez une méthode de recherche pour commencer',
+    initialSub: 'Utilisez la méthode 1 pour filtrer les tendances par format et pays, ou la méthode 2 pour rechercher une vidéo ou une chaîne spécifique.',
+    badgeVideos: 'éléments',
+    lastSync: 'Dernière synchro',
+    countriesInTrend: 'pays',
+    bestRank: 'Meilleur rang',
+    viewsLabel: 'vues',
+    subscribersLabel: 'abonnés',
+    videosCountLabel: 'vidéos',
+    liveStream: 'En direct',
+    today: "Aujourd'hui",
+    daysAgo: n => `Il y a ${Math.round(n)} jours`,
+    monthsAgo: n => `Il y a ${Math.round(n/30)} mois`,
+    yearsAgo: n => `Il y a ${(n/365).toFixed(1)} ans`,
+    sections: {
+      regular: { title: 'Vidéos Standards', hint: 'Vidéos de plus d\'une minute' },
+      short:   { title: 'YouTube Shorts', hint: 'Vidéos de 60 secondes ou moins' },
+      kids:    { title: 'Enfants & Famille', hint: 'Vidéos marquées « Conçu pour les enfants »' },
+      searchResults: { title: 'Résultats de Recherche', hint: 'Résultats correspondants sur YouTube' },
+      trendingChannels: { title: 'Chaînes Tendance', hint: 'Créateurs les plus présents dans les charts' }
+    },
+    secSubtitle: 'Source : YouTube Data API v3 · Musique exclue',
+    th: {
+      rank: 'Rang',
+      rankSub: 'Par popularité & présence',
+      video: 'Vidéo / Chaîne',
+      videoSub: 'Titre · Chaîne · Catégorie',
+      views: 'Vues',
+      viewsSub: 'viewCount',
+      likes: 'J\'aime / Abonnés',
+      likesSub: 'likeCount / abonnés',
+      comments: 'Commentaires / Vidéos',
+      commentsSub: 'commentCount / vidéos',
+      duration: 'Durée',
+      durationSub: 'duration',
+      published: 'Publié',
+      publishedSub: 'publishedAt',
+      countries: 'En Tendance Dans',
+      countriesSub: 'Présence géographique'
+    },
+    categories: {
+      '1':'Films et animations','2':'Auto et moto','15':'Animaux','17':'Sport','19':'Voyages et événements',
+      '20':'Jeux vidéo','22':'Personnes et blogs','23':'Humour','24':'Divertissement','25':'Actualités et politique',
+      '26':'Vie pratique','27':'Éducation','28':'Sciences et technologies','29':'Associations','channel':'Créateur'
+    },
+    uncategorized: 'Non catégorisé',
+    emptyTitle: 'Aucun résultat ne correspond à votre recherche',
+    emptyType: 'Aucun élément de cette catégorie dans les résultats',
+    loadingTitle: 'Récupération des données YouTube...',
+    loadingSub: 'Chargement des données du serveur... Cela peut prendre quelques secondes.',
+    notesTitle: 'Comment Lire ces Tableaux',
+    notes: [
+      '<b>Source :</b> Classements par pays via YouTube Data API v3 dans plus de 20 pays, avec filtrage des catégories.',
+      '<b>Sans la Musique :</b> La catégorie 10 (Music) est exclue d\'office.',
+      '<b>Calcul du Rang :</b> Portée internationale et meilleur pic atteint.',
+      '<b>Vidéos et Chaînes :</b> Filtrez les tendances par vidéos individuelles ou par chaînes créatrices.'
+    ],
+    errKeyTitle: 'Problème de Clé YouTube API',
+    errKeyDesc: 'Vérifiez la variable YOUTUBE_API_KEY et l\'activation de YouTube Data API v3.',
+    errConnTitle: 'Impossible de Joindre le Serveur TrendRadar',
+    errConnDesc: 'Le serveur backend ne répond pas. Vérifiez que Node.js est bien en cours d\'exécution.',
+    footerDesc: 'Analyseur automatisé des tendances YouTube multi-régions agrégeant les charts populaires en temps réel dans plus de 20 pays.',
+    footerNavTitle: 'Méthodes de Recherche',
+    footerSpecsTitle: 'Moteur de Données',
+    footerLegalTitle: 'Plateforme & Légal',
+    footerLegalDesc: 'TrendRadar est un tableau de bord indépendant. YouTube et Google LLC sont des marques déposées.',
+    backToTop: 'Haut de page',
+    rights: 'Tous droits réservés.',
+    officialLang: 'Langue officielle : Anglais'
+  }
+};
+
+// Global App State
+const state = {
+  lang: localStorage.getItem('tr_lang') || 'en', // English is always the official default!
+  theme: localStorage.getItem('tr_theme') || 'dark',
+  activeMethod: '1',
+  hasSearched: false,
+  searchMode: null, // 'trends' | 'direct'
+  type: 'all',
+  entityM1: 'video', // 'video' | 'channel' | 'all'
+  entityM2: 'video', // 'video' | 'channel'
+  q: '',
+  cc: '',
+  hours: 0,
+  cc2: '',
+  hours2: 0,
+  sorts: {},
+  trendsData: null,
+  directResults: null,
+  stores: { status: 'idle' }
+};
+
+// Apply Theme
+function applyTheme(t) {
+  state.theme = t;
+  document.documentElement.setAttribute('data-theme', t);
+  localStorage.setItem('tr_theme', t);
+  $('themeIcon').textContent = t === 'dark' ? '☀️' : '🌙';
+}
+
+// Method Switcher
+function switchMethod(methodNum) {
+  state.activeMethod = methodNum;
+  $('tabBtn1').classList.toggle('active', methodNum === '1');
+  $('tabBtn2').classList.toggle('active', methodNum === '2');
+  $('methodPanel1').classList.toggle('active', methodNum === '1');
+  $('methodPanel2').classList.toggle('active', methodNum === '2');
+  if (methodNum === '2') {
+    $('q2').focus();
+  }
+}
+
+// Apply Language (NEVER FLIP LAYOUT - STRICT FIXED POSITIONS)
+function applyLanguage(lang) {
+  if (!I18N[lang]) lang = 'en';
+  state.lang = lang;
+  localStorage.setItem('tr_lang', lang);
+
+  // Keep dir="ltr" permanently to prevent ANY element flipping!
+  document.documentElement.setAttribute('dir', 'ltr');
+  document.documentElement.setAttribute('lang', lang);
+
+  // Update Language Button Label
+  const labels = { en: 'English', ar: 'العربية', fr: 'Français' };
+  $('currentLangLabel').textContent = labels[lang];
+  document.querySelectorAll('.lang-item').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.lang === lang);
+  });
+
+  // Translate static UI elements
+  const t = I18N[lang];
+  $('brandSub').textContent = t.brandSub;
+  $('appDescP1').textContent = t.appDescP1;
+  $('appDescP2').textContent = t.appDescP2;
+
+  $('tab1Title').textContent = t.tab1Title;
+  $('tab2Title').textContent = t.tab2Title;
+  $('m1Badge').textContent = t.m1Badge;
+  $('m1Desc').textContent = t.m1Desc;
+  $('btnSearchM1Text').textContent = t.m1Btn;
+  $('m2Badge').textContent = t.m2Badge;
+  $('m2Desc').textContent = t.m2Desc;
+  $('q2').placeholder = t.m2Placeholder;
+  $('btnSearchM2Text').textContent = t.m2Btn;
+
+  $('chipAll').textContent = t.all;
+  $('chipRegular').textContent = t.regular;
+  $('chipShort').textContent = t.shorts;
+  $('chipKids').textContent = t.kids;
+
+  $('optM1Video').textContent = t.optVideos;
+  $('optM1Channel').textContent = t.optChannels;
+  $('optM1All').textContent = t.optAllEntity;
+  $('optM2Video').textContent = t.optVideos;
+  $('optM2Channel').textContent = t.optChannels;
+
+  if ($('optAllCountries')) $('optAllCountries').textContent = t.allCountries;
+  if ($('optAllCountries2')) $('optAllCountries2').textContent = t.allCountries;
+  $('q1').placeholder = t.searchPlaceholder;
+
+  // Update time filters in both methods
+  const timeKeys = ['0', '3', '6', '12', '24', '48', '168'];
+  const curT1 = $('timeFilter1') ? $('timeFilter1').value : '0';
+  const curT2 = $('timeFilter2') ? $('timeFilter2').value : '0';
+  const timeOptsHtml = timeKeys.map(k => `<option value="${k}">${t.timeOptions[k]}</option>`).join('');
+  if ($('timeFilter1')) {
+    $('timeFilter1').innerHTML = timeOptsHtml;
+    $('timeFilter1').value = curT1 || '0';
+  }
+  if ($('timeFilter2')) {
+    $('timeFilter2').innerHTML = timeOptsHtml;
+    $('timeFilter2').value = curT2 || '0';
+  }
+  
+  $('footerDesc').textContent = t.footerDesc;
+  $('footerNavTitle').textContent = t.footerNavTitle;
+  $('footerSpecsTitle').textContent = t.footerSpecsTitle;
+  $('footerLegalTitle').textContent = t.footerLegalTitle;
+  $('footerLegalDesc').textContent = t.footerLegalDesc;
+  $('backToTopText').textContent = t.backToTop;
+  $('footerRights').textContent = t.rights;
+  $('footerDefaultLang').textContent = t.officialLang;
+
+  $('fnM1').textContent = t.tab1Title;
+  $('fnM2').textContent = t.tab2Title;
+
+  fillCountries(state.trendsData);
+  renderAll();
+}
+
+// Helpers
+const nf = new Intl.NumberFormat('en-US');
+const fmtFull = n => nf.format(Math.round(n || 0));
+
+function formatNum(n){
+  n = n || 0;
+  if(n >= 1e9) return (n/1e9).toFixed(1).replace(/\.0$/,'') + 'B';
+  if(n >= 1e6) return (n/1e6).toFixed(1).replace(/\.0$/,'') + 'M';
+  if(n >= 1e3) return (n/1e3).toFixed(1).replace(/\.0$/,'') + 'K';
+  return String(Math.round(n));
+}
+
+function escapeHtml(s){
+  return String(s == null ? '' : s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[m]);
+}
+
+const safeUrl = u => /^https:\/\//i.test(u || '') ? escapeHtml(u) : '#';
+function daysBetween(d){ const t = Date.parse(d); return Number.isFinite(t) ? (Date.now() - t) / 864e5 : null; }
+
+function formatDaysAgo(d) {
+  const n = daysBetween(d);
+  const t = I18N[state.lang];
+  if(n === null) return '—';
+  if(n < 1) return t.today;
+  if(n < 30) return t.daysAgo(n);
+  if(n < 365) return t.monthsAgo(n);
+  return t.yearsAgo(n);
+}
+
+const clockMs = ms => new Date(ms).toLocaleTimeString(state.lang === 'ar' ? 'ar-SA' : 'en-GB', { hour:'2-digit', minute:'2-digit' });
+
+function fmtDur(s, live){
+  const t = I18N[state.lang];
+  if(live) return t.liveStream;
+  if(!s) return '—';
+  const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), x = s % 60, p = n => String(n).padStart(2, '0');
+  return h ? `${h}:${p(m)}:${p(x)}` : `${m}:${p(x)}`;
+}
+
+let DN = {};
+function regionName(cc){
+  try {
+    DN[state.lang] = DN[state.lang] || new Intl.DisplayNames([state.lang], { type: 'region' });
+    return DN[state.lang].of(cc) || cc;
+  } catch(e){ return cc; }
+}
+
+const flag = cc => /^[A-Z]{2}$/.test(cc) ? String.fromCodePoint(...[...cc].map(c => 127397 + c.charCodeAt(0))) : '🌐';
+
+const matchesQ = it => {
+  // 1. STRICT Country Filter
+  if(state.cc && !(it.countries || []).some(c => c.cc === state.cc)) return false;
+
+  // 2. STRICT Recent Hours Filter
+  if(state.hours > 0 && it.published) {
+    const pub = Date.parse(it.published);
+    if(Number.isFinite(pub)) {
+      const hoursAgo = (Date.now() - pub) / (3600 * 1000);
+      if(hoursAgo > state.hours) return false;
+    }
+  }
+
+  // 3. Keyword Filter
+  if(!state.q) return true;
+  const cats = I18N[state.lang].categories;
+  const hay = [it.title, it.channel, cats[it.categoryId] || '', (it.countries || []).map(c => regionName(c.cc)).join(' ')].join(' ').toLowerCase();
+  return hay.includes(state.q.toLowerCase());
+};
+
+/* Sort Handler */
+const TEXT_KEYS = new Set(['name']);
+function thSort(tbl, key, label, real, cls){
+  const s = state.sorts[tbl];
+  const on = s && s.key === key;
+  return `<th class="sortable${cls ? ' ' + cls : ''}" data-tbl="${tbl}" data-sk="${key}" tabindex="0" role="button" aria-sort="${on ? (s.dir === 'desc' ? 'descending' : 'ascending') : 'none'}">${label}<span class="arr${on ? ' ' + s.dir : ''}"></span><span class="real">${real}</span></th>`;
+}
+
+function sortBy(rows, s, getters, tie){
+  const g = s && getters[s.key];
+  if(!g) return rows.slice().sort(tie);
+  const dir = s.dir === 'desc' ? -1 : 1;
+  const text = TEXT_KEYS.has(s.key);
+  return rows.slice().sort((a, b) => {
+    const x = g(a), y = g(b);
+    const nx = x === null || x === undefined || (typeof x === 'number' && !Number.isFinite(x));
+    const ny = y === null || y === undefined || (typeof y === 'number' && !Number.isFinite(y));
+    if(nx || ny) return nx && ny ? tie(a, b) : nx ? 1 : -1;
+    const c = text ? String(x).localeCompare(String(y)) : x - y;
+    return c ? c * dir : tie(a, b);
+  });
+}
+
+function toggleSort(tbl, key){
+  const s = state.sorts[tbl];
+  state.sorts[tbl] = s && s.key === key
+    ? { key, dir: s.dir === 'desc' ? 'asc' : 'desc' }
+    : { key, dir: TEXT_KEYS.has(key) ? 'asc' : 'desc' };
+}
+
+const dateNum = d => { const t = Date.parse(d); return Number.isFinite(t) ? t : null; };
+const GET = {
+  rank: it => it.rank, name: it => it.title, views: it => it.views, likes: it => it.likes, comments: it => it.comments,
+  duration: it => it.live ? null : (it.duration || null), published: it => dateNum(it.published),
+  countries: it => (it.countries || []).length
+};
+
+/* Country Dropdown Fill */
+function fillCountries(data){
+  const cur = state.cc, cur2 = state.cc2;
+  const codes = new Set(DEFAULT_REGIONS);
+  if(data && data.regions) data.regions.forEach(c => codes.add(c));
+  if(data && data.charts) Object.values(data.charts).forEach(c => (c.items || []).forEach(it => (it.countries || []).forEach(x => codes.add(x.cc))));
+  const t = I18N[state.lang];
+  const optionsHtml = `<option value="">${t.allCountries}</option>` + [...codes].sort((a, b) => regionName(a).localeCompare(regionName(b), state.lang))
+    .map(c => `<option value="${escapeHtml(c)}">${flag(c)} ${escapeHtml(regionName(c))}</option>`).join('');
+  if ($('cc')) {
+    $('cc').innerHTML = optionsHtml;
+    $('cc').value = cur || '';
+  }
+  if ($('cc2')) {
+    $('cc2').innerHTML = optionsHtml;
+    $('cc2').value = cur2 || '';
+  }
+}
+
+/* ================================================================
+   SEARCH ACTIONS
+   ================================================================ */
+
+// Execute Method 1: Explore Trends by Criteria
+async function runSearchMethod1() {
+  state.hasSearched = true;
+  state.searchMode = 'trends';
+  state.stores = { status: 'loading' };
+  state.q = $('q1').value.trim();
+  state.cc = $('cc').value;
+  state.type = $('formatSelect').value;
+  state.entityM1 = $('entityType1').value;
+  state.hours = $('timeFilter1') ? (Number($('timeFilter1').value) || 0) : 0;
+  $('btnSearchM1').disabled = true;
+  renderAll();
+
+  try {
+    const url = state.cc 
+      ? `${API}/api/trends?country=${encodeURIComponent(state.cc)}` 
+      : `${API}/api/trends`;
+    const res = await fetch(url);
+    if(!res.ok){
+      let m = ''; try { m = (await res.json()).error || ''; } catch(e){}
+      throw new Error(m || ('HTTP ' + res.status));
+    }
+    const data = await res.json();
+    if(!data || !data.charts) throw new Error('Invalid response structure');
+    state.trendsData = data;
+    fillCountries(data);
+    state.stores = { status: 'ok', data };
+  } catch(e) {
+    state.stores = { status: 'error', error: (e && e.message) || 'Connection failed' };
+  }
+  $('btnSearchM1').disabled = false;
+  renderAll();
+  
+  $('results').scrollIntoView({ behavior: 'smooth' });
+}
+
+// Execute Method 2: Search by Video or Channel Name
+async function runSearchMethod2() {
+  const query = $('q2').value.trim();
+  if (!query) {
+    $('q2').focus();
+    return;
+  }
+  state.hasSearched = true;
+  state.searchMode = 'direct';
+  state.stores = { status: 'loading' };
+  state.entityM2 = $('entityType2').value;
+  state.cc2 = $('cc2') ? $('cc2').value : '';
+  state.hours2 = $('timeFilter2') ? (Number($('timeFilter2').value) || 0) : 0;
+  $('btnSearchM2').disabled = true;
+  renderAll();
+
+  try {
+    let url = `${API}/api/search?q=${encodeURIComponent(query)}&target=${encodeURIComponent(state.entityM2)}`;
+    if (state.cc2) url += `&country=${encodeURIComponent(state.cc2)}`;
+    if (state.hours2 > 0) url += `&hours=${state.hours2}`;
+
+    const res = await fetch(url);
+    if(!res.ok){
+      let m = ''; try { m = (await res.json()).error || ''; } catch(e){}
+      throw new Error(m || ('HTTP ' + res.status));
+    }
+    const data = await res.json();
+    if(!data || !data.items) throw new Error('Invalid search response');
+    state.directResults = data;
+    state.stores = { status: 'ok', data };
+  } catch(e) {
+    state.stores = { status: 'error', error: (e && e.message) || 'Search failed' };
+  }
+  $('btnSearchM2').disabled = false;
+  renderAll();
+
+  $('results').scrollIntoView({ behavior: 'smooth' });
+}
+
+const SECTIONS_DEF = [
+  { id:'regular', ico:'🎬' },
+  { id:'short',   ico:'⚡' },
+  { id:'kids',    ico:'🧒' }
+];
+
+function countriesCell(it){
+  const list = it.countries || [];
+  const t = I18N[state.lang];
+  if(!list.length) return `<div class="cell-main na">—</div>`;
+
+  if(state.cc) {
+    const cObj = list.find(c => c.cc === state.cc);
+    if(cObj) {
+      const moreCount = list.length - 1;
+      const morePill = moreCount > 0 ? `<span class="pill gray" title="${escapeHtml(list.filter(x=>x.cc!==state.cc).map(c=>regionName(c.cc)).join(', '))}">+${moreCount}</span>` : '';
+      return `<div class="pills"><span class="pill blue">${flag(cObj.cc)} ${escapeHtml(regionName(cObj.cc))} · #${cObj.rank}</span>${morePill}</div><div class="cell-sub">${flag(state.cc)} ${escapeHtml(regionName(state.cc))} · ${t.bestRank} <span class="ltr">#${cObj.rank}</span></div>`;
+    }
+  }
+
+  const show = list.slice(0, 3).map(c =>
+    `<span class="pill blue" title="${escapeHtml(regionName(c.cc))} · ${t.bestRank} #${c.rank}">${flag(c.cc)} ${escapeHtml(regionName(c.cc))}</span>`).join('');
+  const more = list.length > 3
+    ? `<span class="pill gray" title="${escapeHtml(list.slice(3).map(c => regionName(c.cc)).join(', '))}">+${list.length - 3}</span>` : '';
+  return `<div class="pills">${show}${more}</div><div class="cell-sub"><span class="ltr">${list.length}</span> ${t.countriesInTrend} · ${t.bestRank} <span class="ltr">#${it.bestRank}</span></div>`;
+}
+
+function numCell(n, label){
+  if(n === null || n === undefined) return `<div class="cell-main na">—</div>`;
+  return `<div class="cell-main"><span class="ltr">${formatNum(n)}</span></div><div class="cell-sub"><span class="ltr">${fmtFull(n)}</span>${label ? ' ' + label : ''}</div>`;
+}
+
+function dateCell(iso){
+  if(!iso) return `<div class="cell-main na">—</div>`;
+  const d = daysBetween(iso);
+  const cls = d !== null && d < 3 ? 'green' : d !== null && d < 30 ? 'blue' : 'gray';
+  return `<span class="pill ${cls}">${String(iso).slice(0, 10)}</span><div class="cell-sub">${formatDaysAgo(iso)}</div>`;
+}
+
+function videoRow(it, def){
+  const t = I18N[state.lang];
+  const cats = t.categories;
+  const isChan = it.kind === 'channel';
+  const imgCls = isChan ? 'app-img chan-thumb' : 'app-img vthumb';
+  const img = it.thumb
+    ? `<img class="${imgCls}" data-fallback="${def.ico}" src="${safeUrl(it.thumb)}" alt="" loading="lazy">`
+    : `<div class="noimg">${def.ico}</div>`;
+
+  const viewsLabel = t.viewsLabel;
+  const likesLabel = isChan ? t.subscribersLabel : '';
+  const commentsLabel = isChan ? t.videosCountLabel : '';
+  const durDisplay = isChan ? '—' : fmtDur(it.duration, it.live);
+
+  const cObj = state.cc ? (it.countries || []).find(c => c.cc === state.cc) : null;
+  const rankNum = cObj ? cObj.rank : it.rank;
+
+  return `<tr>
+    <td class="col-rank rank"><span class="ltr">#${rankNum}</span></td>
+    <td class="col-video"><div class="app-cell">${img}<div class="meta">
+      <a class="name" href="${safeUrl(it.url)}" target="_blank" rel="noopener">${escapeHtml(it.title)}</a>
+      <div class="dev">${escapeHtml(it.channel)} · ${escapeHtml(cats[it.categoryId] || t.uncategorized)}</div></div></div></td>
+    <td class="col-views">${numCell(it.views, viewsLabel)}</td>
+    <td class="col-likes">${numCell(it.likes, likesLabel)}</td>
+    <td class="col-comments">${numCell(it.comments, commentsLabel)}</td>
+    <td class="col-duration"><span class="pill gray"><span class="ltr">${durDisplay}</span></span></td>
+    <td class="col-published">${dateCell(it.published)}</td>
+    <td class="col-countries">${countriesCell(it)}</td>
+  </tr>`;
+}
+
+function videoSection(def, data){
+  const t = I18N[state.lang];
+  const secInfo = t.sections[def.id] || { title: def.id, hint: '' };
+  const c = data.charts[def.id];
+  const rows = c && c.ok ? c.items : [];
+  
+  const tie = (a, b) => {
+    if (state.cc) {
+      const rA = (a.countries || []).find(x => x.cc === state.cc)?.rank || 999;
+      const rB = (b.countries || []).find(x => x.cc === state.cc)?.rank || 999;
+      return rA - rB || a.rank - b.rank;
+    }
+    return a.rank - b.rank;
+  };
+
+  const shown = sortBy(rows.filter(matchesQ), state.sorts[def.id], GET, tie);
+  const err = c && !c.ok ? `<div class="err">Error loading ${secInfo.title}: ${escapeHtml(c.error || '')}</div>` : '';
+
+  const countryLabel = state.cc ? ` — ${flag(state.cc)} ${regionName(state.cc)}` : '';
+  const timeLabel = state.hours > 0 ? ` · ${t.timeOptions[String(state.hours)] || ''}` : '';
+  const regionsCount = state.cc ? `1 ${t.countriesInTrend}` : `<span class="ltr">${(data.regions || []).length}</span> ${t.countriesInTrend}`;
+
+  return `<div class="section" id="sec-${def.id}">
+    <div class="sec-head">
+      <div>
+        <h3>${def.ico} ${secInfo.title}${countryLabel}</h3>
+        <div class="meta">${secInfo.hint} · ${t.secSubtitle} · ${regionsCount}${timeLabel}</div>
+      </div>
+      <span class="badge">${shown.length} ${t.badgeVideos} · ${t.lastSync} ${clockMs(data.syncedAt)}</span>
+    </div>
+    ${err}
+    ${shown.length ? `<div class="table-wrap"><table>
+      <thead><tr>
+        ${thSort(def.id, 'rank', t.th.rank, t.th.rankSub, 'col-rank')}
+        ${thSort(def.id, 'name', t.th.video, t.th.videoSub, 'col-video')}
+        ${thSort(def.id, 'views', t.th.views, t.th.viewsSub, 'col-views')}
+        ${thSort(def.id, 'likes', t.th.likes, t.th.likesSub, 'col-likes')}
+        ${thSort(def.id, 'comments', t.th.comments, t.th.commentsSub, 'col-comments')}
+        ${thSort(def.id, 'duration', t.th.duration, t.th.durationSub, 'col-duration')}
+        ${thSort(def.id, 'published', t.th.published, t.th.publishedSub, 'col-published')}
+        ${thSort(def.id, 'countries', t.th.countries, t.th.countriesSub, 'col-countries')}
+      </tr></thead><tbody>${shown.map(it => videoRow(it, def)).join('')}</tbody></table></div>`
+      : (err ? '' : `<div class="empty"><div class="big">🔍</div><h4>${rows.length ? t.emptyTitle : t.emptyType}</h4></div>`)}
+  </div>`;
+}
+
+// Group Trending Videos by Creator Channel (When "Channels" selected in Method 1)
+function trendingChannelsSection(data) {
+  const t = I18N[state.lang];
+  const channelMap = new Map();
+  Object.values(data.charts || {}).forEach(chart => {
+    (chart.items || []).forEach(v => {
+      if (!v.channel) return;
+      if (state.cc && !(v.countries || []).some(c => c.cc === state.cc)) return;
+      if (state.hours > 0 && v.published) {
+        const pub = Date.parse(v.published);
+        if (Number.isFinite(pub) && ((Date.now() - pub) / 3600000) > state.hours) return;
+      }
+
+      let ch = channelMap.get(v.channel);
+      if (!ch) {
+        ch = {
+          rank: 0,
+          id: v.channel,
+          title: v.channel,
+          channel: v.channel,
+          categoryId: 'channel',
+          url: v.url,
+          thumb: v.thumb,
+          views: 0,
+          likes: 0, // Used as trending videos count
+          comments: null,
+          duration: null,
+          live: false,
+          kind: 'channel',
+          published: v.published,
+          _c: new Map()
+        };
+        channelMap.set(v.channel, ch);
+      }
+      ch.views += (v.views || 0);
+      ch.likes += 1; // video count
+      (v.countries || []).forEach(c => {
+        if (!state.cc || c.cc === state.cc) {
+          const prev = ch._c.get(c.cc);
+          if (prev === undefined || c.rank < prev) ch._c.set(c.cc, c.rank);
+        }
+      });
+    });
+  });
+
+  const channelsList = [...channelMap.values()].map(ch => {
+    const countries = [...ch._c.entries()].map(([cc, rank]) => ({ cc, rank })).sort((a,b)=>a.rank-b.rank);
+    return { ...ch, countries, bestRank: countries.length ? countries[0].rank : 999 };
+  });
+
+  const order = (a, b) => b.countries.length - a.countries.length || a.bestRank - b.bestRank || b.views - a.views;
+  const filtered = channelsList.filter(matchesQ).sort(order).slice(0, 50).map((v, i) => ({ ...v, rank: i + 1 }));
+  const shown = sortBy(filtered, state.sorts['channels'], GET, (a, b) => a.rank - b.rank);
+  const def = { id: 'channels', ico: '📢' };
+  const countryLabel = state.cc ? ` — ${flag(state.cc)} ${regionName(state.cc)}` : '';
+  const timeLabel = state.hours > 0 ? ` · ${t.timeOptions[String(state.hours)] || ''}` : '';
+
+  return `<div class="section" id="sec-channels">
+    <div class="sec-head">
+      <div>
+        <h3>📢 ${t.sections.trendingChannels.title}${countryLabel}</h3>
+        <div class="meta">${t.sections.trendingChannels.hint} · ${t.secSubtitle}${timeLabel}</div>
+      </div>
+      <span class="badge">${shown.length} ${t.badgeVideos} · ${t.lastSync} ${clockMs(data.syncedAt)}</span>
+    </div>
+    ${shown.length ? `<div class="table-wrap"><table>
+      <thead><tr>
+        ${thSort('channels', 'rank', t.th.rank, t.th.rankSub, 'col-rank')}
+        ${thSort('channels', 'name', t.th.video, t.th.videoSub, 'col-video')}
+        ${thSort('channels', 'views', t.th.views, t.th.viewsSub, 'col-views')}
+        ${thSort('channels', 'likes', t.th.likes, t.th.likesSub, 'col-likes')}
+        ${thSort('channels', 'comments', t.th.comments, t.th.commentsSub, 'col-comments')}
+        ${thSort('channels', 'duration', t.th.duration, t.th.durationSub, 'col-duration')}
+        ${thSort('channels', 'published', t.th.published, t.th.publishedSub, 'col-published')}
+        ${thSort('channels', 'countries', t.th.countries, t.th.countriesSub, 'col-countries')}
+      </tr></thead><tbody>${shown.map(it => videoRow(it, def)).join('')}</tbody></table></div>`
+      : `<div class="empty"><div class="big">🔍</div><h4>${t.emptyTitle}</h4></div>`}
+  </div>`;
+}
+
+function directSearchSection(data) {
+  const t = I18N[state.lang];
+  let rows = data.items || [];
+
+  if (state.hours2 > 0) {
+    rows = rows.filter(it => {
+      if (!it.published) return true;
+      const pub = Date.parse(it.published);
+      if (Number.isFinite(pub)) {
+        const hoursAgo = (Date.now() - pub) / (3600 * 1000);
+        return hoursAgo <= state.hours2;
+      }
+      return true;
+    });
+  }
+
+  const shown = sortBy(rows, state.sorts['search'], GET, (a, b) => a.rank - b.rank);
+  const isChan = data.target === 'channel';
+  const def = { id: 'search', ico: isChan ? '📢' : '🎥' };
+  const targetLabel = isChan ? t.optChannels : t.optVideos;
+  const countryTag = state.cc2 ? ` · ${flag(state.cc2)} ${regionName(state.cc2)}` : '';
+  const hoursTag = state.hours2 > 0 ? ` · ${t.timeOptions[String(state.hours2)] || ''}` : '';
+
+  return `<div class="section" id="sec-search">
+    <div class="sec-head">
+      <div>
+        <h3>${def.ico} ${t.sections.searchResults.title}: "${escapeHtml(data.query)}" (${targetLabel})</h3>
+        <div class="meta">${t.sections.searchResults.hint}${countryTag}${hoursTag}</div>
+      </div>
+      <span class="badge">${shown.length} ${t.badgeVideos}</span>
+    </div>
+    ${shown.length ? `<div class="table-wrap"><table>
+      <thead><tr>
+        ${thSort('search', 'rank', t.th.rank, t.th.rankSub, 'col-rank')}
+        ${thSort('search', 'name', t.th.video, t.th.videoSub, 'col-video')}
+        ${thSort('search', 'views', t.th.views, t.th.viewsSub, 'col-views')}
+        ${thSort('search', 'likes', t.th.likes, t.th.likesSub, 'col-likes')}
+        ${thSort('search', 'comments', t.th.comments, t.th.commentsSub, 'col-comments')}
+        ${thSort('search', 'duration', t.th.duration, t.th.durationSub, 'col-duration')}
+        ${thSort('search', 'published', t.th.published, t.th.publishedSub, 'col-published')}
+        ${thSort('search', 'countries', t.th.countries, t.th.countriesSub, 'col-countries')}
+      </tr></thead><tbody>${shown.map(it => videoRow(it, def)).join('')}</tbody></table></div>`
+      : `<div class="empty"><div class="big">🔍</div><h4>${t.emptyTitle}</h4></div>`}
+  </div>`;
+}
+
+function notesBox(data){
+  if (!data || !data.charts) return '';
+  const t = I18N[state.lang];
+  const failed = Object.keys(data.failed || {});
+  return `${data.partial ? `<div class="warn">Sync note: ${escapeHtml(data.partial)}</div>` : ''}
+  ${failed.length ? `<div class="warn">Could not fetch region data: ${escapeHtml(failed.map(regionName).join(', '))}.</div>` : ''}
+  <div class="note"><b>${t.notesTitle}</b><ul>
+    ${t.notes.map(n => `<li>${n}</li>`).join('')}
+  </ul></div>`;
+}
+
+function initialWelcomeCard() {
+  const t = I18N[state.lang];
+  return `<div class="initial-hero-card">
+    <div class="icon">🎯</div>
+    <h3>${t.initialTitle}</h3>
+    <p>${t.initialSub}</p>
+  </div>`;
+}
+
+function unreachableCard(){
+  const t = I18N[state.lang];
+  const m = state.stores.error || '';
+  const err = m ? ` (${escapeHtml(m)})` : '';
+  if(/YOUTUBE_API_KEY|API key|keyInvalid|quota/i.test(m)){
+    return `<div class="section"><div class="empty">
+      <div class="big">🔑</div>
+      <h4>${t.errKeyTitle}${err}</h4>
+      <p>${t.errKeyDesc}</p>
+    </div></div>`;
+  }
+  return `<div class="section"><div class="empty">
+    <div class="big">🖥️</div>
+    <h4>${t.errConnTitle}${err}</h4>
+    <p>${t.errConnDesc}</p>
+  </div></div>`;
+}
+
+function skeleton(){
+  const t = I18N[state.lang];
+  const headers = [
+    { title: t.th.rank, cls: 'col-rank' },
+    { title: t.th.video, cls: 'col-video' },
+    { title: t.th.views, cls: 'col-views' },
+    { title: t.th.likes, cls: 'col-likes' },
+    { title: t.th.comments, cls: 'col-comments' },
+    { title: t.th.duration, cls: 'col-duration' },
+    { title: t.th.published, cls: 'col-published' },
+    { title: t.th.countries, cls: 'col-countries' }
+  ];
+  const rows = Array.from({ length: 6 }, () =>
+    `<tr class="skel-row">${headers.map((h, i) => `<td class="${h.cls}"><div class="skel" style="width:${i === 1 ? '150px' : '45px'}"></div></td>`).join('')}</tr>`).join('');
+  return `<div class="section"><div class="sec-head"><div><h3>▶️ ${t.loadingTitle}</h3><div class="meta">${t.loadingSub}</div></div></div>
+    <div class="table-wrap"><table><thead><tr>${headers.map(h => `<th class="${h.cls}">${h.title}</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table></div></div>`;
+}
+
+function renderAll(){
+  const s = state.stores;
+  let html;
+  if (!state.hasSearched || s.status === 'idle') {
+    html = initialWelcomeCard();
+  } else if (s.status === 'loading') {
+    html = skeleton();
+  } else if (s.status === 'error') {
+    html = unreachableCard();
+  } else {
+    if (state.searchMode === 'trends') {
+      if (state.entityM1 === 'channel') {
+        html = trendingChannelsSection(s.data) + notesBox(s.data);
+      } else {
+        html = SECTIONS_DEF.filter(d => state.type === 'all' || state.type === d.id).map(d => videoSection(d, s.data)).join('') + notesBox(s.data);
+      }
+    } else if (state.searchMode === 'direct') {
+      html = directSearchSection(s.data);
+    }
+  }
+  $('results').innerHTML = html;
+}
+
+/* Event Listeners */
+// Method 1 Buttons & Inputs
+$('btnSearchM1').addEventListener('click', runSearchMethod1);
+$('q1').addEventListener('keydown', e => { if (e.key === 'Enter') runSearchMethod1(); });
+$('cc').addEventListener('change', () => { if (state.hasSearched && state.searchMode === 'trends') runSearchMethod1(); });
+$('entityType1').addEventListener('change', () => { if (state.hasSearched && state.searchMode === 'trends') runSearchMethod1(); });
+if ($('timeFilter1')) $('timeFilter1').addEventListener('change', () => { if (state.hasSearched && state.searchMode === 'trends') runSearchMethod1(); });
+
+// Method 2 Buttons & Inputs
+$('btnSearchM2').addEventListener('click', runSearchMethod2);
+$('q2').addEventListener('keydown', e => { if (e.key === 'Enter') runSearchMethod2(); });
+if ($('entityType2')) $('entityType2').addEventListener('change', () => { if (state.hasSearched && state.searchMode === 'direct') runSearchMethod2(); });
+if ($('cc2')) $('cc2').addEventListener('change', () => { if (state.hasSearched && state.searchMode === 'direct') runSearchMethod2(); });
+if ($('timeFilter2')) $('timeFilter2').addEventListener('change', () => { if (state.hasSearched && state.searchMode === 'direct') runSearchMethod2(); });
+
+// Theme Toggle
+$('themeToggle').addEventListener('click', () => {
+  const nextTheme = state.theme === 'dark' ? 'light' : 'dark';
+  applyTheme(nextTheme);
+});
+
+// Language Menu Toggle & Select
+const langWrapper = $('langWrapper');
+$('langBtn').addEventListener('click', (e) => {
+  e.stopPropagation();
+  langWrapper.classList.toggle('active');
+  $('langBtn').setAttribute('aria-expanded', langWrapper.classList.contains('active'));
+});
+
+document.querySelectorAll('.lang-item').forEach(item => {
+  item.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const lang = item.dataset.lang;
+    applyLanguage(lang);
+    langWrapper.classList.remove('active');
+    $('langBtn').setAttribute('aria-expanded', 'false');
+  });
+});
+
+document.addEventListener('click', (e) => {
+  if (!langWrapper.contains(e.target)) {
+    langWrapper.classList.remove('active');
+    $('langBtn').setAttribute('aria-expanded', 'false');
+  }
+});
+
+// Table Sort
+function onHeadActivate(e){
+  const th = e.target.closest && e.target.closest('th[data-sk]');
+  if(!th) return;
+  if(e.type === 'keydown'){ if(e.key !== 'Enter' && e.key !== ' ') return; e.preventDefault(); }
+  toggleSort(th.dataset.tbl, th.dataset.sk);
+  renderAll();
+}
+$('results').addEventListener('click', onHeadActivate);
+$('results').addEventListener('keydown', onHeadActivate);
+
+// Type Chips
+// Format Select listener (replaces old chips)
+$('formatSelect').addEventListener('change', () => {
+  state.type = $('formatSelect').value;
+  if (state.hasSearched && state.searchMode === 'trends') renderAll();
+});
+
+// Image fallback
+document.addEventListener('error', e => {
+  const t = e.target;
+  if(t && t.tagName === 'IMG' && t.classList.contains('app-img')){
+    const d = document.createElement('div');
+    d.className = 'noimg';
+    d.textContent = t.dataset.fallback || '📦';
+    t.replaceWith(d);
+  }
+}, true);
+
+// Initialize App (NO AUTOMATIC FETCHING ON LOAD, FIXED ORIENTATION)
+$('footerYear').textContent = new Date().getFullYear();
+fillCountries(null);
+applyTheme(state.theme);
+applyLanguage(state.lang); // English default
+renderAll();
+</script>
+</body>
+</html>
